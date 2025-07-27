@@ -1,0 +1,57 @@
+name = "saas-factory-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-15"
+node_compat = true
+
+# Development environment
+[env.development]
+name = "saas-factory-api-dev"
+vars = { 
+  ENVIRONMENT = "development",
+  NODE_ENV = "development"
+}
+
+# Staging environment
+[env.staging]
+name = "saas-factory-api-staging"
+vars = { 
+  ENVIRONMENT = "staging",
+  NODE_ENV = "production"
+}
+
+# Production environment
+[env.production]
+name = "saas-factory-api-prod"
+vars = { 
+  ENVIRONMENT = "production",
+  NODE_ENV = "production"
+}
+
+# KV namespaces for caching (optional)
+# [[env.staging.kv_namespaces]]
+# binding = "CACHE"
+# id = "your-staging-kv-namespace-id"
+
+# [[env.production.kv_namespaces]]
+# binding = "CACHE"
+# id = "your-production-kv-namespace-id"
+
+# R2 buckets for file storage (optional)
+# [[env.staging.r2_buckets]]
+# binding = "STORAGE"
+# bucket_name = "saas-factory-staging"
+
+# [[env.production.r2_buckets]]
+# binding = "STORAGE"
+# bucket_name = "saas-factory-production"
+
+# D1 databases (alternative to external PostgreSQL)
+# [[env.staging.d1_databases]]
+# binding = "DB"
+# database_name = "saas-factory-staging"
+# database_id = "your-staging-d1-database-id"
+
+# [[env.production.d1_databases]]
+# binding = "DB"
+# database_name = "saas-factory-production"
+# database_id = "your-production-d1-database-id"

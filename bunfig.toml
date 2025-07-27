@@ -1,0 +1,16 @@
+[install]
+# Configure package installation
+cache = true
+exact = true
+auto = "bun"
+
+[install.scopes]
+# Configure scoped packages if needed
+
+[run]
+# Configure script execution
+shell = "bash"
+
+[test]
+# Configure test runner
+preload = ["./test/setup.ts"]

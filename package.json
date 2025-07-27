@@ -1,0 +1,64 @@
+{
+  "name": "saas-factory",
+  "version": "1.0.0",
+  "description": "A comprehensive SaaS platform foundation with modern TypeScript stack",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "tools/*"
+  ],
+  "scripts": {
+    "dev": "bun run --filter='*' dev",
+    "build": "bun run --filter='*' build",
+    "test": "bun test",
+    "test:unit": "bun run --filter='*' test:unit",
+    "test:integration": "bun run --filter='*' test:integration",
+    "test:e2e": "bun run --filter=web test:e2e",
+    "lint": "bun run --filter='*' lint",
+    "lint:fix": "bun run --filter='*' lint:fix",
+    "type-check": "bun run --filter='*' type-check",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "clean": "bun run --filter='*' clean && rm -rf node_modules",
+    "db:generate": "bun run --filter=api db:generate",
+    "db:migrate": "bun run --filter=api db:migrate",
+    "db:migrate:deploy": "bun run --filter=api db:migrate:deploy",
+    "db:seed": "bun run --filter=api db:seed",
+    "db:reset": "bun run --filter=api db:reset",
+    "setup": "bun install && bun run db:generate",
+    "setup:dev": "bun run setup && bun run db:migrate && bun run db:seed"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.54.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-import": "^2.29.0",
+    "eslint-plugin-jsx-a11y": "^6.8.0",
+    "eslint-plugin-react": "^7.33.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "prettier": "^3.1.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "bun": ">=1.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/saas-factory.git"
+  },
+  "keywords": [
+    "saas",
+    "typescript",
+    "react",
+    "hono",
+    "cloudflare",
+    "prisma",
+    "multi-tenant"
+  ],
+  "author": "SaaS Factory Team",
+  "license": "MIT"
+}

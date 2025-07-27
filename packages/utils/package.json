@@ -1,0 +1,33 @@
+{
+  "name": "@saas-factory/utils",
+  "version": "1.0.0",
+  "description": "Shared utilities for SaaS Factory",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint . --ext ts --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "eslint . --ext ts --fix",
+    "type-check": "tsc --noEmit",
+    "test": "vitest",
+    "test:unit": "vitest run",
+    "clean": "rm -rf dist node_modules .turbo"
+  },
+  "dependencies": {
+    "clsx": "^2.0.0",
+    "zod": "^3.22.4",
+    "@saas-factory/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@saas-factory/config": "workspace:*",
+    "typescript": "^5.2.2",
+    "vitest": "^1.0.0"
+  }
+}
