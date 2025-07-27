@@ -27,7 +27,22 @@
     "db:seed": "bun run --filter=api db:seed",
     "db:reset": "bun run --filter=api db:reset",
     "setup": "bun install && bun run db:generate",
-    "setup:dev": "bun run setup && bun run db:migrate && bun run db:seed"
+    "setup:dev": "bun run setup && bun run db:migrate && bun run db:seed",
+    "deploy:staging": "./scripts/deploy/deploy-staging.sh",
+    "deploy:production": "./scripts/deploy/deploy-production.sh",
+    "verify:staging": "./scripts/deploy/verify-deployment.sh staging",
+    "verify:production": "./scripts/deploy/verify-deployment.sh production",
+    "rollback:staging": "./scripts/deploy/rollback.sh staging",
+    "rollback:production": "./scripts/deploy/rollback.sh production",
+    "setup:deployment": "./scripts/setup-deployment.sh",
+    "setup:github": "./scripts/setup-github.sh",
+    "migrate:staging": "./tools/scripts/migrate-production.sh staging",
+    "migrate:production": "./tools/scripts/migrate-production.sh production",
+    "setup:supabase": "./tools/scripts/setup-supabase.sh",
+    "build:api": "cd apps/api && bun run build",
+    "build:web": "cd apps/web && bun run build",
+    "deploy:api:staging": "cd apps/api && bunx wrangler deploy --env staging",
+    "deploy:api:production": "cd apps/api && bunx wrangler deploy --env production"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

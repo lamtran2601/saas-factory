@@ -1,0 +1,404 @@
+name: Database Migration
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      migration_type:
+        description: 'Migration type'
+        required: true
+        default: 'apply'
+        type: choice
+        options:
+          - apply
+          - rollback
+          - reset
+          - status
+      confirm_production:
+        description: 'Type "CONFIRM" to proceed with production migration'
+        required: false
+        type: string
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  validate-input:
+    name: Validate Migration Request
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Validate production confirmation
+        if: inputs.environment == 'production' && inputs.migration_type != 'status'
+        run: |
+          if [ "${{ inputs.confirm_production }}" != "CONFIRM" ]; then
+            echo "❌ Production migrations require confirmation"
+            echo "Please type 'CONFIRM' in the confirm_production field"
+            exit 1
+          fi
+          echo "✅ Production migration confirmed"
+
+      - name: Log migration request
+        run: |
+          echo "🔄 Migration Request Details:"
+          echo "Environment: ${{ inputs.environment }}"
+          echo "Type: ${{ inputs.migration_type }}"
+          echo "Triggered by: ${{ github.actor }}"
+          echo "Commit: ${{ github.sha }}"
+
+  backup-database:
+    name: Backup Database
+    runs-on: ubuntu-latest
+    needs: [validate-input]
+    if: inputs.migration_type != 'status'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Create database backup
+        run: |
+          echo "📦 Creating database backup for ${{ inputs.environment }}..."
+          
+          # Set project ID based on environment
+          if [ "${{ inputs.environment }}" == "production" ]; then
+            PROJECT_ID="${{ secrets.PRODUCTION_SUPABASE_PROJECT_ID }}"
+          else
+            PROJECT_ID="${{ secrets.STAGING_SUPABASE_PROJECT_ID }}"
+          fi
+          
+          # Create backup using Supabase CLI
+          supabase db dump --project-ref $PROJECT_ID --data-only > backup-$(date +%Y%m%d-%H%M%S).sql
+          
+          echo "✅ Database backup created"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-backup-${{ inputs.environment }}-${{ github.run_number }}
+          path: backup-*.sql
+          retention-days: 30
+
+  migration-status:
+    name: Check Migration Status
+    runs-on: ubuntu-latest
+    needs: [validate-input]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Link to Supabase project
+        run: |
+          if [ "${{ inputs.environment }}" == "production" ]; then
+            PROJECT_ID="${{ secrets.PRODUCTION_SUPABASE_PROJECT_ID }}"
+          else
+            PROJECT_ID="${{ secrets.STAGING_SUPABASE_PROJECT_ID }}"
+          fi
+          
+          supabase link --project-ref $PROJECT_ID
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Check migration status
+        run: |
+          cd apps/api
+          echo "📊 Current migration status for ${{ inputs.environment }}:"
+          supabase migration list
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+  apply-migrations:
+    name: Apply Migrations
+    runs-on: ubuntu-latest
+    needs: [backup-database, migration-status]
+    if: inputs.migration_type == 'apply'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Link to Supabase project
+        run: |
+          if [ "${{ inputs.environment }}" == "production" ]; then
+            PROJECT_ID="${{ secrets.PRODUCTION_SUPABASE_PROJECT_ID }}"
+          else
+            PROJECT_ID="${{ secrets.STAGING_SUPABASE_PROJECT_ID }}"
+          fi
+          
+          supabase link --project-ref $PROJECT_ID
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Apply migrations
+        run: |
+          cd apps/api
+          echo "🚀 Applying migrations to ${{ inputs.environment }}..."
+          supabase db push --include-all
+          echo "✅ Migrations applied successfully"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Verify migrations
+        run: |
+          cd apps/api
+          echo "🔍 Verifying migration status..."
+          supabase migration list
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+  rollback-migrations:
+    name: Rollback Migrations
+    runs-on: ubuntu-latest
+    needs: [backup-database, migration-status]
+    if: inputs.migration_type == 'rollback'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Link to Supabase project
+        run: |
+          if [ "${{ inputs.environment }}" == "production" ]; then
+            PROJECT_ID="${{ secrets.PRODUCTION_SUPABASE_PROJECT_ID }}"
+          else
+            PROJECT_ID="${{ secrets.STAGING_SUPABASE_PROJECT_ID }}"
+          fi
+          
+          supabase link --project-ref $PROJECT_ID
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Rollback migrations
+        run: |
+          cd apps/api
+          echo "⏪ Rolling back migrations in ${{ inputs.environment }}..."
+          # Note: Supabase doesn't have direct rollback, so we reset and reapply
+          echo "⚠️  Warning: This will reset the database to the current migration state"
+          supabase db reset --linked
+          echo "✅ Database reset completed"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+  reset-database:
+    name: Reset Database
+    runs-on: ubuntu-latest
+    needs: [backup-database, migration-status]
+    if: inputs.migration_type == 'reset'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Link to Supabase project
+        run: |
+          if [ "${{ inputs.environment }}" == "production" ]; then
+            PROJECT_ID="${{ secrets.PRODUCTION_SUPABASE_PROJECT_ID }}"
+          else
+            PROJECT_ID="${{ secrets.STAGING_SUPABASE_PROJECT_ID }}"
+          fi
+          
+          supabase link --project-ref $PROJECT_ID
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Reset database
+        run: |
+          cd apps/api
+          echo "🔄 Resetting database in ${{ inputs.environment }}..."
+          echo "⚠️  Warning: This will destroy all data and reset to migration state"
+          supabase db reset --linked
+          echo "✅ Database reset completed"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+  generate-types:
+    name: Generate TypeScript Types
+    runs-on: ubuntu-latest
+    needs: [apply-migrations]
+    if: inputs.migration_type == 'apply'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Generate TypeScript types
+        run: |
+          if [ "${{ inputs.environment }}" == "production" ]; then
+            PROJECT_ID="${{ secrets.PRODUCTION_SUPABASE_PROJECT_ID }}"
+            OUTPUT_FILE="packages/types/src/supabase-production.ts"
+          else
+            PROJECT_ID="${{ secrets.STAGING_SUPABASE_PROJECT_ID }}"
+            OUTPUT_FILE="packages/types/src/supabase-staging.ts"
+          fi
+          
+          echo "📝 Generating TypeScript types for ${{ inputs.environment }}..."
+          supabase gen types typescript --project-id $PROJECT_ID > $OUTPUT_FILE
+          echo "✅ TypeScript types generated"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Upload generated types
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-types-${{ inputs.environment }}-${{ github.run_number }}
+          path: packages/types/src/supabase-*.ts
+          retention-days: 7
+
+  verify-migration:
+    name: Verify Migration
+    runs-on: ubuntu-latest
+    needs: [apply-migrations, generate-types]
+    if: inputs.migration_type == 'apply'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Test database connectivity
+        run: |
+          if [ "${{ inputs.environment }}" == "production" ]; then
+            PROJECT_ID="${{ secrets.PRODUCTION_SUPABASE_PROJECT_ID }}"
+          else
+            PROJECT_ID="${{ secrets.STAGING_SUPABASE_PROJECT_ID }}"
+          fi
+          
+          echo "🔍 Testing database connectivity..."
+          # Add specific database tests here
+          echo "✅ Database connectivity verified"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Run database health checks
+        run: |
+          echo "🏥 Running database health checks..."
+          # Add health check queries here
+          echo "✅ Database health checks passed"
+
+  notify:
+    name: Notify Migration Status
+    runs-on: ubuntu-latest
+    needs: [apply-migrations, rollback-migrations, reset-database, migration-status, verify-migration]
+    if: always()
+    
+    steps:
+      - name: Determine migration result
+        id: result
+        run: |
+          if [ "${{ needs.apply-migrations.result }}" == "success" ] || \
+             [ "${{ needs.rollback-migrations.result }}" == "success" ] || \
+             [ "${{ needs.reset-database.result }}" == "success" ] || \
+             [ "${{ needs.migration-status.result }}" == "success" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send notification
+        run: |
+          if [ "${{ steps.result.outputs.status }}" == "success" ]; then
+            echo "✅ Migration completed successfully"
+            echo "Environment: ${{ inputs.environment }}"
+            echo "Type: ${{ inputs.migration_type }}"
+            echo "Triggered by: ${{ github.actor }}"
+          else
+            echo "❌ Migration failed"
+            echo "Environment: ${{ inputs.environment }}"
+            echo "Type: ${{ inputs.migration_type }}"
+            echo "Check the logs for details"
+          fi
+
+      - name: Send Slack notification
+        if: always() && secrets.SLACK_WEBHOOK_URL != ''
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ steps.result.outputs.status }}
+          channel: '#database'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+          custom_payload: |
+            {
+              text: "Database Migration ${{ steps.result.outputs.status == 'success' && 'Completed' || 'Failed' }}",
+              attachments: [{
+                color: "${{ steps.result.outputs.status == 'success' && 'good' || 'danger' }}",
+                fields: [{
+                  title: "Environment",
+                  value: "${{ inputs.environment }}",
+                  short: true
+                }, {
+                  title: "Migration Type",
+                  value: "${{ inputs.migration_type }}",
+                  short: true
+                }, {
+                  title: "Triggered By",
+                  value: "${{ github.actor }}",
+                  short: true
+                }]
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

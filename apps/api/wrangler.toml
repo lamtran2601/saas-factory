@@ -17,6 +17,10 @@ name = "saas-factory-api-staging"
 [env.staging.vars]
 ENVIRONMENT = "staging"
 NODE_ENV = "production"
+SUPABASE_URL = "https://aqwylqhbnrksjyumoktd.supabase.co"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxd3lscWhibnJrc2p5dW1va3RkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1OTI1MTYsImV4cCI6MjA2OTE2ODUxNn0.mysZWtF_KnOsxlMGKnL-B1MITO85XaS9KeMvleHcXxk"
+API_URL = "https://saas-factory-api-staging.lamtran2601.workers.dev"
+FRONTEND_URL = "https://saas-factory-staging.pages.dev"
 
 # Production environment
 [env.production]
@@ -25,6 +29,10 @@ name = "saas-factory-api-prod"
 [env.production.vars]
 ENVIRONMENT = "production"
 NODE_ENV = "production"
+SUPABASE_URL = "https://lpdmqgbuajvlqsagarad.supabase.co"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwZG1xZ2J1YWp2bHFzYWdhcmFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1OTI1MzAsImV4cCI6MjA2OTE2ODUzMH0.sMkZ1tu3n2J8XfCnyaRmFmsBP1EIOIncxnFvSx7JltE"
+API_URL = "https://saas-factory-api-prod.lamtran2601.workers.dev"
+FRONTEND_URL = "https://saas-factory-production.pages.dev"
 
 # KV namespaces for caching (optional)
 # [[env.staging.kv_namespaces]]

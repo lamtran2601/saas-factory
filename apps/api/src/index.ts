@@ -38,20 +38,41 @@ app.use('*', prettyJSON());
 app.use('*', secureHeaders());
 
 // CORS configuration
-app.use('*', cors({
-  origin: (origin) => {
-    // Allow requests from frontend and development
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'https://app.saas-factory.com',
-      'https://staging.saas-factory.com'
-    ];
-    return allowedOrigins.includes(origin) || origin.endsWith('.saas-factory.com');
-  },
-  credentials: true,
-  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
-}));
+app.use(
+  '*',
+  cors({
+    origin: (origin, c) => {
+      // Get frontend URL from environment
+      const frontendUrl = c.env?.FRONTEND_URL || 'http://localhost:3000';
+
+      // Allow requests from frontend and development
+      const allowedOrigins = [
+        'http://localhost:3000',
+        'https://app.saas-factory.com',
+        'https://staging.saas-factory.com',
+        'https://your-domain.com',
+        'https://staging.your-domain.com',
+        frontendUrl,
+      ];
+
+      // Allow any subdomain of your domain in production
+      const isAllowedDomain =
+        origin?.endsWith('.saas-factory.com') ||
+        origin?.endsWith('.your-domain.com') ||
+        origin?.endsWith('.pages.dev'); // Cloudflare Pages preview URLs
+
+      return allowedOrigins.includes(origin) || isAllowedDomain;
+    },
+    credentials: true,
+    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-API-Key',
+      'X-Requested-With',
+    ],
+  })
+);
 
 // Rate limiting
 app.use('/api/*', rateLimiter);
@@ -60,12 +81,12 @@ app.use('/api/*', rateLimiter);
 app.onError(errorHandler);
 
 // Health check endpoint
-app.get('/health', (c) => {
+app.get('/health', c => {
   return c.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
     version: '1.0.0',
-    environment: c.env.NODE_ENV || 'development'
+    environment: c.env.NODE_ENV || 'development',
   });
 });
 
@@ -87,20 +108,27 @@ app.route('/api/subscriptions', subscriptionRoutes);
 app.route('/api/admin', adminRoutes);
 
 // 404 handler
-app.notFound((c) => {
-  return c.json({
-    success: false,
-    error: {
-      code: 'NOT_FOUND',
-      message: 'Endpoint not found',
+app.notFound(c => {
+  return c.json(
+    {
+      success: false,
+      error: {
+        code: 'NOT_FOUND',
+        message: 'Endpoint not found',
+      },
+      timestamp: new Date().toISOString(),
     },
-    timestamp: new Date().toISOString()
-  }, 404);
+    404
+  );
 });
 
 // Export for Cloudflare Workers
 export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  async fetch(
+    request: Request,
+    env: Env,
+    ctx: ExecutionContext
+  ): Promise<Response> {
     return app.fetch(request, env, ctx);
   },
 };

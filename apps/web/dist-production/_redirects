@@ -1,0 +1,17 @@
+# Cloudflare Pages Redirects Configuration
+
+# SPA fallback - redirect all non-file requests to index.html
+/*    /index.html   200
+
+# API redirects (if needed)
+/api/*  https://api.your-domain.com/api/:splat  200
+
+# Legacy redirects (add as needed)
+# /old-path  /new-path  301
+
+# Redirect www to non-www (if using custom domain)
+https://www.your-domain.com/*  https://your-domain.com/:splat  301
+
+# Force HTTPS (if using custom domain)
+http://your-domain.com/*  https://your-domain.com/:splat  301
+http://www.your-domain.com/*  https://your-domain.com/:splat  301
