@@ -1,15 +1,14 @@
 [install]
 # Configure package installation
-cache = true
 exact = true
-auto = "bun"
+auto = "auto"
 
 [install.scopes]
 # Configure scoped packages if needed
 
 [run]
 # Configure script execution
-shell = "bash"
+shell = "system"
 
 [test]
 # Configure test runner

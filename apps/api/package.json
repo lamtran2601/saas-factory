@@ -25,16 +25,17 @@
     "clean": "rm -rf dist node_modules .turbo"
   },
   "dependencies": {
-    "hono": "^3.11.7",
+    "@hono/zod-validator": "0.7.2",
     "@prisma/client": "^5.6.0",
-    "@supabase/supabase-js": "^2.38.0",
-    "zod": "^3.22.4",
-    "stripe": "^14.7.0",
-    "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2",
+    "@saas-factory/auth": "workspace:*",
     "@saas-factory/types": "workspace:*",
     "@saas-factory/utils": "workspace:*",
-    "@saas-factory/auth": "workspace:*"
+    "@supabase/supabase-js": "^2.38.0",
+    "bcryptjs": "^2.4.3",
+    "hono": "^3.11.7",
+    "jsonwebtoken": "^9.0.2",
+    "stripe": "^14.7.0",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20231025.0",
